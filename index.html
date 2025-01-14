@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin: 20px;
+            padding: 20px;
+        }
+
+        /* Dialog styling update */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: #18181b;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 300px;
+            margin: 20px;
+            transform: translateY(-10%);
+        }
+
+        /* Title screen update */
+        .title-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            transform: translateY(-10%);
+        }
+
+        .prompt-area {
+            background-color: #18181b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #27272a;
+            margin-bottom: 20px;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            touch-action: none;
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* This creates a square aspect ratio */
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .tools {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .tool-button {
+            padding: 8px;
+            background: #27272a;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-button.active {
+            background: #3b82f6;
+        }
+
+        .color-presets {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .color-preset {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #27272a;
+            cursor: pointer;
+        }
+
+        .range-slider {
+            width: 100%;
+        }
+
+        .action-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .finish-button {
+            background: #16a34a;
+            margin: 0 auto;
+        }
+
+        .finish-button:hover {
+            background: #15803d;
+        }
+
+        .reveal-screen {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .reveal-screen.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .reveal-content > * {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .reveal-content.show .full-prompt {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.2s;
+        }
+
+        .reveal-content.show .combined-image-container {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.8s;
+        }
+
+        .reveal-content.show .save-hint {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 1.2s;
+        }
+
+        .reveal-content.show .next-button {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 1.4s;
+        }
+
+        .save-hint {
+            text-align: center;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .combined-image-container {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .combined-image {
+            background: white;
+            border-radius: 8px;
+            max-width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .next-button {
+            background: #9333ea;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .next-button:hover {
+            background: #7e22ce;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Screen -->
+    <div id="titleScreen" class="container">
+        <div class="title-content" style="text-align: center; margin-top: 40px;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 30px; font-family: 'Comic Sans MS', 'Comic Sans', cursive;">😸 DRAWING GAME!! 😸</h1>
+            <p style="color: #d694d1; line-height: 1.6; margin-bottom: 30px; font-size: 1.1rem;">
+                Hi love, click down there and start drawin' :) 
+            </p>
+            <button class="action-button" style="background: #4bc578; margin: 0 auto;" id="startButton">
+                Start Drawing
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirmDialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog-content" style="background: #18181b; padding: 24px; border-radius: 12px; text-align: center; max-width: 300px; margin: 20px;">
+            <h3 style="margin-bottom: 16px;">Are you sure you're done?</h3>
+            <p style="color: #9ca3af; margin-bottom: 24px;">Once you proceed, you won't be able to edit your drawing anymore.</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="action-button" style="background: #4b5563;" id="cancelFinish">No, keep drawing</button>
+                <button class="action-button" style="background: #4bc578;" id="confirmFinish">Yes, I'm done!</button>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Drawing Screen -->
+    <div id="drawingScreen" class="container" style="display: none;">
+        <div class="prompt-area">
+            <h2>Current Prompt:</h2>
+            <p style="color:#8ddaa9" id="currentPrompt"></p>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+
+        <div class="color-presets">
+            <!-- Color presets will be added by JavaScript -->
+        </div>
+
+        <div class="tools">
+            <div class="tool-group">
+                <input type="color" class="color-picker" id="colorPicker" value="#000000">
+                <button class="tool-button" id="eraserButton">Eraser</button>
+                <button class="tool-button" id="undoButton">Undo</button>
+                <button class="tool-button" id="clearButton">Clear</button>
+            </div>
+            <div class="tool-group">
+                <input type="range" class="range-slider" id="lineWidth" min="1" max="50" value="5">
+            </div>
+        </div>
+
+        <button class="action-button finish-button" id="finishButton">
+            I'm Done Drawing
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Reveal Screen -->
+    <div id="revealScreen" class="container reveal-screen">
+        <div class="reveal-content">
+            <div class="prompt-area full-prompt">
+                <h2>The Full Prompt Was:</h2>
+                <p style="color:#eeafd9" id="fullPrompt"></p>
+            </div>
+
+            <div class="combined-image-container">
+                <img id="combinedImage" class="combined-image" alt="Combined drawings">
+                <p class="save-hint">(psst... tap and hold the image to save it to your camera roll,
+                    this image only shows up once!)</p>
+            </div>
+
+            <button class="action-button next-button" id="nextButton">
+                Next Prompt
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden canvas for combining images -->
+    <canvas id="combineCanvas" class="hidden"></canvas>
+
+    <script src="game.js"></script>
+</body>
+</html>
